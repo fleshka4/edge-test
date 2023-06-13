@@ -7,16 +7,6 @@
 #include "rate_limiter.h"
 #include "pcap_packet.h"
 
-TEST(RateLimiter, BadLimit) {
-    RateLimiter rateLimiter;
-    EXPECT_THROW(rateLimiter.processPcapFile(-1.0, "../pcap_files/bfd-raw-auth-simple.pcap", "out.pcap"), std::runtime_error);
-}
-
-TEST(RateLimiter, BadInputFile) {
-    RateLimiter rateLimiter;
-    EXPECT_THROW(rateLimiter.processPcapFile(10.0, "../pcap_files/15564645616.pcap", "out.pcap"), std::runtime_error);
-}
-
 TEST(SizeMbpsCalculator, ZeroIsZero) {
     PcapPacketHeader packetHeader{};
     EXPECT_EQ(0, RateLimiter::calculatePacketSizeMbps(packetHeader));
@@ -28,12 +18,24 @@ TEST(SizeMbpsCalculator, CorrectSize) {
     EXPECT_EQ(10 * 8, RateLimiter::calculatePacketSizeMbps(packetHeader));
 }
 
-TEST(RateLimiter, AllGood) {
+class RateLimiterTestFixture : public testing::Test {
+protected:
     RateLimiter rateLimiter;
+
     const std::string inputFileName = "../pcap_files/bfd-raw-auth-simple.pcap";
     const std::string outputFileName = "out.pcap";
+};
 
-    EXPECT_NO_THROW(rateLimiter.processPcapFile(10.0, "../pcap_files/bfd-raw-auth-simple.pcap", "out.pcap"));
+TEST_F(RateLimiterTestFixture, BadLimit) {
+    EXPECT_THROW(rateLimiter.processPcapFile(-1.0, inputFileName, outputFileName), std::runtime_error);
+}
+
+TEST_F(RateLimiterTestFixture, BadInputFile) {
+    EXPECT_THROW(rateLimiter.processPcapFile(10.0, "../pcap_files/15564645616.pcap", outputFileName), std::runtime_error);
+}
+
+TEST_F(RateLimiterTestFixture, AllGood) {
+    EXPECT_NO_THROW(rateLimiter.processPcapFile(10.0, inputFileName, outputFileName));
 
     std::ifstream inputFile(inputFileName);
     std::ifstream outputFile(outputFileName);
